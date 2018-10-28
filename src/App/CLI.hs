@@ -30,7 +30,7 @@ import           Data.Bool
 import           Data.Char
 import           Data.List
 import qualified Data.Map                   as Map
-import           Data.Maybe                 (fromJust)
+import           Data.Maybe                 (fromJust, maybeToList)
 import           Data.String.Conversions
 import qualified Jira.API                   as Jira
 import           Options.Applicative
@@ -100,7 +100,7 @@ runCLI options = case options^.cliCommand of
     case finishType of
       FinishWithPullRequest -> finishIssueWithPullRequest
       FinishWithMerge       -> finishIssueWithMerge
-  CommitCommand issueString gitOptions -> run $ withIssueId issueString $ \issueId _ ->
+  CommitCommand issueString selection gitOptions -> run $ withIssueId' issueString selection $ \issueId _ ->
     liftIO
       $ withSystemTempFile "agile-cli.gittemplate"
       $ \tempPath tempHandle -> do
@@ -297,6 +297,23 @@ withIssueId Nothing k = withIssueBackend $ \backend -> do
 withIssueId (Just issueString) k = withIssueBackend $ \backend -> do
   issueId <- parseIssueId issueString backend
   k issueId backend
+
+withIssueId' :: Maybe String -> IssueSelectionStrategy -> (forall i. IssueBackend i => IssueId (Issue i) -> i -> AppM a) -> AppM a
+withIssueId' Nothing PreferBranch k = withIssueId Nothing k
+withIssueId' Nothing UserIssueSelection k = withIssueBackend $ \backend -> do
+  issueId <- chooseIssueId backend
+  k issueId backend
+withIssueId' (Just issueString) _ k = withIssueBackend $ \backend -> do
+  issueId <- parseIssueId issueString backend
+  k issueId backend
+
+chooseIssueId :: IssueBackend ib => ib -> AppM (IssueId (Issue ib))
+chooseIssueId backend = do
+  branch <- getCurrentBranch'
+  branchIssue <- tryMaybe (extractIssueId branch backend >>= flip getIssueById backend)
+  activeIssues' <- activeIssues backend
+  let candidates = nub $ maybeToList branchIssue ++ activeIssues'
+  liftIO . userChoice "Select Issue:" $ map (summarizeOneLine &&& issueId) candidates
 
 getActiveIssueId :: IssueBackend ib => ib -> AppM (IssueId (Issue ib))
 getActiveIssueId backend = activeIssues backend >>= \case

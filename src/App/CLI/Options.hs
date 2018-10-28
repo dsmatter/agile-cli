@@ -22,6 +22,8 @@ data SearchOptions = SearchOptions { searchOverAllProjects :: Bool
                                    , searchOnWebsite       :: Bool
                                    } deriving (Show, Eq)
 
+data IssueSelectionStrategy = PreferBranch | UserIssueSelection deriving (Show, Eq)
+
 data CLICommand = InitCommand
                 | ConfigTestCommand
                 | ShowIssueTypesCommand
@@ -38,7 +40,7 @@ data CLICommand = InitCommand
                 | CheckoutCommand BranchStrategy (Maybe String)
                 | CreatePullRequestCommand (Maybe String)
                 | FinishCommand FinishType (Maybe String)
-                | CommitCommand (Maybe String) [String]
+                | CommitCommand (Maybe String) IssueSelectionStrategy [String]
                 deriving (Show, Eq)
 
 data CLIOptions = CLIOptions
@@ -162,7 +164,10 @@ commitCommandParser = CommitCommand
                          <> metavar "ISSUE ID"
                          <> help "Issue ID"
                           )
-               )
+                )
+  <*> flag PreferBranch UserIssueSelection ( 
+    short 's' <> long "select" <> help "Whether to manually select the issue (prefers branch issue otherwise)"
+  )
   <*> many (strArgument (help "Additional options to git commit"))
 
 issueArgParser :: Parser (Maybe String)

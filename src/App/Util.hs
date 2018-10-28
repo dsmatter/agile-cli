@@ -149,6 +149,7 @@ askYesNoWithDefault defaultAnswer question = do
     tryAgain    = askYesNoWithDefault defaultAnswer question
 
 userChoice :: String -> [(String, a)] -> IO a
+userChoice _ [(_, answer)] = return answer
 userChoice question answers = do
   let question' = unlines' $ question : renderAnswers
   readMaybe <$> ask question' >>= \case
