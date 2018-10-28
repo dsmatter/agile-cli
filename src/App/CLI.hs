@@ -313,7 +313,10 @@ chooseIssueId backend = do
   branchIssue <- tryMaybe (extractIssueId branch backend >>= flip getIssueById backend)
   activeIssues' <- activeIssues backend
   let candidates = nub $ maybeToList branchIssue ++ activeIssues'
-  liftIO . userChoice "Select Issue:" $ map (summarizeOneLine &&& issueId) candidates
+  case candidates of
+    [] -> throwError $ UserInputException "No suitable issue found"
+    [issue] -> liftIO $ putStrLn ("Using issue: " ++ summarizeOneLine issue) >> return (issueId issue)
+    issues -> liftIO . userChoice "Select Issue:" $ map (summarizeOneLine &&& issueId) issues
 
 getActiveIssueId :: IssueBackend ib => ib -> AppM (IssueId (Issue ib))
 getActiveIssueId backend = activeIssues backend >>= \case
