@@ -77,10 +77,8 @@ instance IssueBackend JiraConfig where
       parseException = UserInputException $ "Unable to parse issue ID from: "
                                          ++ toBranchString branch
 
-  activeIssueId config =
-    searchIssues opts "status = \"In Progress\"" config >$< \case
-      [issue] -> Just $ issueId issue
-      _       -> Nothing
+  activeIssues config =
+    searchIssues opts "status = \"In Progress\"" config
       where opts = SearchOptions { searchOverAllProjects = False
                                  , searchOnlyUserIssues  = True
                                  , searchOnWebsite       = False

@@ -50,7 +50,7 @@ class IsIssue (Issue backend) => IssueBackend backend where
 
   parseIssueId :: String -> backend -> AppM (IssueId (Issue backend))
   extractIssueId :: BranchName -> backend -> AppM (IssueId (Issue backend))
-  activeIssueId :: backend -> AppM (Maybe (IssueId (Issue backend)))
+  activeIssues :: backend -> AppM [Issue backend]
 
   makeIssueCreationData :: IssueTypeIdentifier (Issue backend) -> String -> backend -> IssueCreationData backend
 

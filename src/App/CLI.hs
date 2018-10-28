@@ -20,6 +20,7 @@ import           App.InitialSetup
 import           App.Types
 import           App.Util
 
+import           Control.Arrow              ((&&&))
 import           Control.Concurrent.Async
 import           Control.Lens
 import           Control.Monad
@@ -298,11 +299,12 @@ withIssueId (Just issueString) k = withIssueBackend $ \backend -> do
   k issueId backend
 
 getActiveIssueId :: IssueBackend ib => ib -> AppM (IssueId (Issue ib))
-getActiveIssueId backend = activeIssueId backend >>= \case
-  Nothing -> throwError $ UserInputException "No distinct active issue"
-  Just issueId -> do
-    liftIO . putStrLn $ "Using active issue: " ++ show issueId
-    return issueId
+getActiveIssueId backend = activeIssues backend >>= \case
+  [] -> throwError $ UserInputException "No active issue"
+  [issue] -> do
+    liftIO . putStrLn $ "Using active issue: " ++ summarizeOneLine issue
+    return $ issueId issue
+  issues -> liftIO $ userChoice "Select issue:" $ map (summarizeOneLine &&& issueId) issues
 
 withIssue :: Maybe String -> (forall i. IssueBackend i => Issue i -> i -> AppM a) -> AppM a
 withIssue s k = withIssueId s $ \issueId backend -> do
