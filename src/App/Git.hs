@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings          #-}
-
 module App.Git (module G) where
 
 import App.Git.Core as G

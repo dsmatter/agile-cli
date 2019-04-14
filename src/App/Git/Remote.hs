@@ -23,7 +23,7 @@ remoteUrl remote = do
   safeHead candidates `orThrow` urlException
   where
     lineCorrespondsToRemote line =
-      maybe False (== remote) $ safeHead (words line)
+      (== Just remote) $ safeHead (words line)
 
     extractUrl line = line ^? to words . ix 1
 

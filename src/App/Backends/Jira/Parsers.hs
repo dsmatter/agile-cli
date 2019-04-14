@@ -18,8 +18,7 @@ issueNumberParser = IssueNumber . read <$> many1 digit <* eof
 issueKeyParser :: StringParser IssueKey
 issueKeyParser = do
   project <- many1Till letter (char '-')
-  number  <- issueNumberParser
-  return $ IssueKey project number
+  IssueKey project <$> issueNumberParser
 
 issueKeyParserWithDefaultProject :: String -> StringParser IssueKey
 issueKeyParserWithDefaultProject project =
