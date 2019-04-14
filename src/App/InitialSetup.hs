@@ -12,7 +12,7 @@ import           Control.Arrow              ((&&&))
 import           Control.Lens               hiding (set')
 import           Control.Monad              (when)
 import           Control.Monad.IO.Class     (liftIO)
-import           Control.Monad.Trans.Either
+import           Control.Monad.Except
 import           Crypto.Types.PubKey.RSA    (PrivateKey (..))
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as LBS
@@ -151,12 +151,12 @@ getGithubConfigInteractively = do
   return $ defaultGithubConfig { _githubOAuthToken = oAuthToken }
 
 runJiraAuth :: Config -> AppIO Config
-runJiraAuth config = runEitherT $ do
+runJiraAuth config = runExceptT $ do
   liftIO $ putStrLn "Performing JIRA OAuth authentication..."
 
   jiraConfig  <- takeJiraConfig config
-  privateKey  <- EitherT . readPrivateKey $ jiraConfig^.jiraOAuthSigningKeyPath
-  accessToken <- EitherT $ doGetAccessToken jiraConfig privateKey
+  privateKey  <- ExceptT . readPrivateKey $ jiraConfig^.jiraOAuthSigningKeyPath
+  accessToken <- ExceptT $ doGetAccessToken jiraConfig privateKey
   return $ uncurry updateConfig accessToken
   where
     updateConfig :: BS.ByteString -> BS.ByteString -> Config

@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase    #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module App.Config where
@@ -10,8 +9,7 @@ import           App.Util
 
 import           Control.Exception
 import           Control.Lens
-import           Control.Monad.Except       hiding (forM_)
-import           Control.Monad.Trans.Either
+import           Control.Monad.Except       hiding (forM_, liftEither)
 import           Crypto.Types.PubKey.RSA    (PrivateKey (..))
 import           Data.Aeson
 import qualified Data.Aeson.Encode.Pretty   as P
@@ -166,8 +164,8 @@ readPrivateKey path = tryWith toPrivateKeyException $
       ]
 
 readConfig' :: AppIO (FilePath, Config)
-readConfig' = runEitherT $
-      EitherT searchConfigParts
+readConfig' = runExceptT $
+      ExceptT searchConfigParts
   >$< map normalizeConfigPart
   >$< mergeConfigParts
   >>= \case
@@ -175,9 +173,9 @@ readConfig' = runEitherT $
     Just (ConfigPart (ConfigPath configPath) partialConfig) ->
       case missingConfigKeys (referenceConfigFor partialConfig) partialConfig  of
       [] -> do
-        config <- hoistEither $ fromPartialConfig partialConfig
+        config <- liftEither $ fromPartialConfig partialConfig
         return (configPath, config)
-      keys -> EitherT $ handleMissingKeys keys configPath
+      keys -> ExceptT $ handleMissingKeys keys configPath
   where
     notFoundException =  ConfigException
                          "No config file found. Please try the init command to get started."
@@ -189,14 +187,14 @@ handleMissingKeys keys configPath = do
 
   askYesNoWithDefault True ("Fill default values to config at " ++ configPath ++ "?") >>= \case
     False -> error "Please fix your config, then."
-    True  -> runEitherT $ do
+    True  -> runExceptT $ do
       rawConfig <- liftIO $ readFile configPath
-      existingPartialConfig <- hoistEither $ parsePartialConfig configPath rawConfig
+      existingPartialConfig <- liftEither $ parsePartialConfig configPath rawConfig
 
       let templatePartialConfig = PartialConfig $ toJSON templateConfig
           filledConfig         = fillMissingConfigKeys templatePartialConfig existingPartialConfig keys
       liftIO $ LBS.writeFile configPath (prettyEncode filledConfig)
-      EitherT readConfig'
+      ExceptT readConfig'
 
 writeConfig :: Config -> AppM ()
 writeConfig config = do
@@ -206,21 +204,21 @@ writeConfig config = do
 searchConfigParts :: AppIO [ConfigPart]
 searchConfigParts = getCurrentDirectory >>= searchConfigParts'
   where
-    searchConfigParts' dir = runEitherT $ do
+    searchConfigParts' dir = runExceptT $ do
       let paths = map (\fn -> joinPath [dir, fn]) configFileNames
       localConfigs <- forM paths $ \path -> do
-        config <- EitherT $ loadConfigFile path
+        config <- ExceptT $ loadConfigFile path
         return $ ConfigPart (ConfigPath path) <$> config
-      otherConfigs <- EitherT getOtherConfigs
+      otherConfigs <- ExceptT getOtherConfigs
       return $ otherConfigs ++ catMaybes localConfigs
       where
         loadConfigFile :: FilePath -> AppIO (Maybe PartialConfig)
-        loadConfigFile path = runEitherT $
+        loadConfigFile path = runExceptT $
           liftIO (doesFileExist path) >>= \case
             False -> return Nothing
             True  -> do
               rawConfig     <- liftIO $ readFile path
-              partialConfig <- hoistEither $ parsePartialConfig path rawConfig
+              partialConfig <- liftEither $ parsePartialConfig path rawConfig
               return $ Just partialConfig
 
         getOtherConfigs :: AppIO [ConfigPart]
@@ -258,7 +256,7 @@ normalizeConfigPart c@(ConfigPart configPath partialConfig) =
 
 prettyEncode :: ToJSON a => a -> LBS.ByteString
 prettyEncode o =
-  let prettyConfig = P.defConfig { P.confIndent = 2, P.confCompare = compare }
+  let prettyConfig = P.defConfig { P.confIndent = P.Spaces 2, P.confCompare = compare }
   in  P.encodePretty' prettyConfig o
 
 referenceConfigFor :: PartialConfig -> PartialConfig

@@ -9,7 +9,6 @@ import           Control.Lens
 import           Control.Monad.Catch
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Control.Monad.Trans.Either
 import           Data.Aeson.TH
 import qualified Data.Map                   as Map
 import           Data.Typeable
@@ -86,7 +85,7 @@ data AppException = JiraApiException JiraException
 
 instance Exception AppException
 
-newtype AppM a = AppM { unAppM :: ReaderT (FilePath, Config) (EitherT AppException IO) a
+newtype AppM a = AppM { unAppM :: ReaderT (FilePath, Config) (ExceptT AppException IO) a
                       } deriving ( Functor
                                  , Applicative
                                  , Monad
@@ -103,10 +102,10 @@ instance MonadIO AppM where
 runApp :: FilePath -> Config -> AppM a -> IO (Either AppException a)
 runApp configPath config m =
   let unwrappedReader = runReaderT (unAppM m) (configPath, config)
-  in  runEitherT unwrappedReader
+  in  runExceptT unwrappedReader
 
 getConfigPath :: AppM FilePath
-getConfigPath = view _1 <$> ask
+getConfigPath = asks (view _1)
 
 getConfig :: AppM Config
-getConfig = view _2 <$> ask
+getConfig = asks (view _2)

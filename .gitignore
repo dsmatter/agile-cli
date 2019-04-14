@@ -9,3 +9,4 @@ docsets/
 ghc-mod.cradle
 tmux.json
 .agile
+.DS_Store

@@ -25,7 +25,6 @@ import           Control.Concurrent.Async
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Except
-import           Control.Monad.Trans.Either
 import           Data.Bool
 import           Data.Char
 import           Data.List
@@ -161,7 +160,7 @@ finishIssueWithMerge issueId issueBackend = do
 
 configTest :: IO ()
 configTest = runAppIO $ do
-  configParts <- EitherT searchConfigParts
+  configParts <- ExceptT searchConfigParts
 
   liftIO $ do
     putStrLn "> Using config files:"
@@ -169,15 +168,15 @@ configTest = runAppIO $ do
     putStrLn ""
     putStrLn "> Putting together config files..."
 
-  (_, config) <- EitherT readConfig'
+  (_, config) <- ExceptT readConfig'
   liftIO . putStrLn . cs $ prettyEncode config
 
   liftIO $ putStrLn "> Testing issue backend"
-  EitherT $ runApp' $ withIssueBackend testBackend
+  ExceptT $ runApp' $ withIssueBackend testBackend
 
   liftIO $ putStrLn "Config seems OK."
   where
-    runAppIO = either handleAppException (const $ return ()) <=< runEitherT
+    runAppIO = either handleAppException (const $ return ()) <=< runExceptT
     printConfigPath = putStrLn . unConfigPath . configPartPath
 
 showIssueTypes :: IO ()
@@ -372,9 +371,9 @@ run :: AppM a -> IO ()
 run m = runApp' m >>= either handleAppException (const $ return ())
 
 runApp' :: AppM a -> IO (Either AppException a)
-runApp' m = runEitherT $ do
-  (configPath, config) <- EitherT readConfig'
-  EitherT $ runApp configPath config m
+runApp' m = runExceptT $ do
+  (configPath, config) <- ExceptT readConfig'
+  ExceptT $ runApp configPath config m
 
 -- Branch Config Helpers
 

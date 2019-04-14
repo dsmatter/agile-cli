@@ -12,7 +12,6 @@ import           App.Util
 
 import           Control.Exception
 import           Control.Monad.Except
-import           Control.Monad.Trans.Either
 import           Data.Either.Combinators
 import           Data.String.Conversions
 import qualified Data.Text                  as T
@@ -32,7 +31,7 @@ instance Show GitException where
 
 instance Exception GitException where
 
-newtype GitM a = GitM { unGitM :: EitherT GitException IO a
+newtype GitM a = GitM { unGitM :: ExceptT GitException IO a
                       } deriving ( Functor
                                  , Applicative
                                  , Monad
@@ -41,7 +40,7 @@ newtype GitM a = GitM { unGitM :: EitherT GitException IO a
                                  )
 
 runGit :: GitM a -> IO (Either GitException a)
-runGit = runEitherT . unGitM
+runGit = runExceptT . unGitM
 
 liftGit :: GitM a -> AppM a
 liftGit m = liftEitherIO $ mapLeft convertException <$> runGit m
