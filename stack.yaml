@@ -1,29 +1,24 @@
 # For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
 
 # Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-13.16
+resolver: lts-16.29
 
 ghc-options:
   agile-cli: -Werror -Wall -fno-warn-name-shadowing -fno-warn-orphans -fno-warn-type-defaults
 
-# Local packages, usually specified by relative directory name
-packages:
-- '.'
-
-# JIRA API library
-- location:
-      git: https://github.com/dsmatter/jira-api.git
-      commit: 272fc6df546fc179463eb8da557b3222f14f8139
-  extra-dep: true
-
-# Snapshot of github library (pre-version 0.14.0)
-- location:
-      git: https://github.com/dsmatter/github.git
-      commit: 99a0f8ae5e904e056dbef9814a93ebda426ff9c7
-  extra-dep: true
+packages: ['.']
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
-extra-deps: [regexpr-0.5.4, mtlparse-0.1.4.0, git-0.3.0]
+extra-deps:
+        - git: https://github.com/dsmatter/jira-api.git
+          commit: e17ade8e9cbb161880f7052b32c243146274a55f
+        - git: https://github.com/dsmatter/github.git
+          commit: 93a6cb41dd9c4965b6391a45a7635230b23e8c68
+        - git: https://github.com/dsmatter/hs-git.git
+          commit: 502ac4165e0a0c0f51139e2969a4a3a1d9c7b7c7
+        - regexpr-0.5.4
+        - mtlparse-0.1.4.0
+          # - git-0.3.0
 
 # Override default flag values for local packages and extra-deps
 flags:

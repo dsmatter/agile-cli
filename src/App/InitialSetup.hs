@@ -10,8 +10,6 @@ import           App.Util
 
 import           Control.Arrow              ((&&&))
 import           Control.Lens               hiding (set')
-import           Control.Monad              (when)
-import           Control.Monad.IO.Class     (liftIO)
 import           Control.Monad.Except
 import           Crypto.Types.PubKey.RSA    (PrivateKey (..))
 import qualified Data.ByteString            as BS
